@@ -1,7 +1,5 @@
 ;;; regex-ts.el --- Tree-sitter support for regexps -*- lexical-binding: t; -*-
 
-;; This is free and unencumbered software released into the public domain.
-
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/regex-ts-mode
 ;; Version: 0.0.1
@@ -35,6 +33,7 @@
 ;;
 ;;; Code:
 
+(eval-when-compile (require 'cl-lib))
 (require 'treesit)
 
 (defface regex-ts-operator-face
@@ -58,10 +57,10 @@
   "Face to highlight regex count groups.")
 
 (defvar regex-ts--feature-list
-  '(( pattern)
-    ( grouping operator escape-sequence)
-    ( range count bracket)
-    ( error))
+  '(( regex-pattern)
+    ( regex-grouping regex-operator regex-escape-sequence)
+    ( regex-range regex-count regex-bracket)
+    ( regex-error))
   "`treesit-font-lock-feature-list' for `regex-ts-mode'.")
 
 (defun regex-ts--fontify-identity-escape (node override &rest _)
@@ -73,11 +72,11 @@
 (defvar regex-ts--font-lock-settings
   (treesit-font-lock-rules
    :language 'regex
-   :feature 'pattern
+   :feature 'regex-pattern
    '((pattern) @font-lock-regexp-face)
 
    :language 'regex
-   :feature 'grouping
+   :feature 'regex-grouping
    :override 'prepend
    '(["|" "=" "(" "(?" "(?:" ")" "(?<" ">"]
      @font-lock-regexp-grouping-construct
@@ -86,27 +85,27 @@
      (group_name) @font-lock-variable-name-face)
 
    :language 'regex
-   :feature 'bracket
+   :feature 'regex-bracket
    :override 'prepend
    '(["[" "]"] @regex-ts-bracket-face)
    
    :language 'regex
-   :feature 'range
+   :feature 'regex-range
    :override 'prepend
    '((class_range) @regex-ts-range-face)
    
    :language 'regex
-   :feature 'operator
+   :feature 'regex-operator
    :override 'prepend
    '(["*" "+" "?" (any_character)] @regex-ts-operator-face)
 
    :language 'regex
-   :feature 'count
+   :feature 'regex-count
    :override 'prepend
    '((count_quantifier) @regex-ts-count-face)
    
    :language 'regex
-   :feature 'escape-sequence
+   :feature 'regex-escape-sequence
    :override 'prepend
    '([(control_letter_escape)
       (character_class_escape)
@@ -119,7 +118,7 @@
      (identity_escape) @regex-ts--fontify-identity-escape)
 
    :language 'regex
-   :feature 'error
+   :feature 'regex-error
    :override t
    '((ERROR) @font-lock-warning-face))
   "Tree-sitter font-lock settings for regexps.")
