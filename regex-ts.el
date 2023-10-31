@@ -41,72 +41,71 @@
   "Face to highlight regex operators.")
 
 (defface regex-ts-bracket-face
-  '((t (:inherit font-lock-regexp-face :weight bold)))
+  '((t (:inherit font-lock-regexp-face)))
   "Face to highlight regex brackets around character classes/ranges.")
 
 (defface regex-ts-range-face
-  '((t (:inherit font-lock-type-face)))
+  '((t (:inherit font-lock-type-face :slant italic)))
   "Face to hightlight regex character ranges.")
+
+(defface regex-ts-character-class-face
+  '((t (:inherit font-lock-type-face)))
+  "Face to highlight characters in regex character classes.")
 
 (defface regex-ts-escape-face
   '((t (:inherit font-lock-escape-face)))
   "Face to highlight regex escape sequences.")
 
 (defface regex-ts-count-face
-  '((t (:inherit font-lock-number-face :slant italic)))
+  '((t (:inherit font-lock-regexp-face :slant italic)))
   "Face to highlight regex count groups.")
 
-(defvar regex-ts--feature-list
-  '(( regex-pattern)
-    ( regex-grouping regex-operator regex-escape-sequence)
-    ( regex-range regex-count regex-bracket)
-    ( regex-error))
+(defvar regex-ts-font-lock-feature-list
+  '(( pattern)
+    ( grouping operator)
+    ( escape-sequence char-class)
+    ( )) ;; error
   "`treesit-font-lock-feature-list' for `regex-ts-mode'.")
 
 (defun regex-ts--fontify-identity-escape (node override &rest _)
-  "Fontify identity escape NODE with OVERRIDE."
-  (let ((beg (treesit-node-start node)))
-    (treesit-fontify-with-override
-     beg (1+ beg) 'font-lock-negation-char-face override)))
+  "Fontify identity escape NODE with FACE using OVERRIDE."
+  (let ((beg (treesit-node-start node))
+        (end (treesit-node-end node)))
+    (treesit-fontify-with-override beg end 'font-lock-regexp-face override)))
 
-(defvar regex-ts--font-lock-settings
+(defun regex-ts-font-lock-rules (&optional override)
+  "Create tree-sitter font-lock rules for regexps with OVERRIDE."
   (treesit-font-lock-rules
    :language 'regex
-   :feature 'regex-pattern
-   '((pattern) @font-lock-regexp-face)
+   :feature 'pattern
+   :override override
+   '([(pattern_character)] @font-lock-regexp-face)
 
    :language 'regex
-   :feature 'regex-grouping
-   :override 'prepend
-   '(["|" "=" "(" "(?" "(?:" ")" "(?<" ">"]
-     @font-lock-regexp-grouping-construct
+   :feature 'char-class
+   :override override
+   '((character_class "^" @font-lock-negation-char-face)
+     (character_class (identity_escape) @regex-ts-character-class-face)
+     (class_character) @regex-ts-character-class-face
+     (class_range) @regex-ts-range-face
+     (count_quantifier) @regex-ts-count-face)
+   
+   :language 'regex
+   :feature 'operator
+   :override override
+   '(["*" "+" "?" (any_character) (lazy)] @regex-ts-operator-face)
+
+   :language 'regex
+   :feature 'grouping
+   :override override
+   '(["|" "=" "(" "(?" "(?:" ")" "(?<" ">"] @font-lock-regexp-grouping-construct
      ["!"] @font-lock-negation-char-face
-     (character_class "^" @font-lock-negation-char-face)
-     (group_name) @font-lock-variable-name-face)
+     (group_name) @font-lock-property-name-face
+     ["[" "]"] @regex-ts-bracket-face)
 
    :language 'regex
-   :feature 'regex-bracket
-   :override 'prepend
-   '(["[" "]"] @regex-ts-bracket-face)
-   
-   :language 'regex
-   :feature 'regex-range
-   :override 'prepend
-   '((class_range) @regex-ts-range-face)
-   
-   :language 'regex
-   :feature 'regex-operator
-   :override 'prepend
-   '(["*" "+" "?" (any_character)] @regex-ts-operator-face)
-
-   :language 'regex
-   :feature 'regex-count
-   :override 'prepend
-   '((count_quantifier) @regex-ts-count-face)
-   
-   :language 'regex
-   :feature 'regex-escape-sequence
-   :override 'prepend
+   :feature 'escape-sequence
+   :override override
    '([(control_letter_escape)
       (character_class_escape)
       (control_escape)
@@ -115,17 +114,11 @@
       (boundary_assertion)
       (non_boundary_assertion)]
      @regex-ts-escape-face
-     (identity_escape) @regex-ts--fontify-identity-escape)
-
-   :language 'regex
-   :feature 'regex-error
-   :override t
-   '((ERROR) @font-lock-warning-face))
-  "Tree-sitter font-lock settings for regexps.")
+     (identity_escape) @regex-ts--fontify-identity-escape)))
 
 ;;; Major mode
 
-(defvar regex-ts-mode--syntax-table
+(defvar regex-ts-mode-syntax-table
   (let ((table (make-syntax-table)))
     (cl-loop for c across ".^$|,"
              do (modify-syntax-entry c "." table))
@@ -141,11 +134,11 @@
 (define-derived-mode regex-ts-mode prog-mode "Regex"
   "Major mode for regular expressions."
   :group 'regex
-  :syntax-table regex-ts-mode--syntax-table
+  :syntax-table regex-ts-mode-syntax-table
   (when (treesit-ready-p 'regex)
     (treesit-parser-create 'regex)
-    (setq-local treesit-font-lock-settings regex-ts--font-lock-settings)
-    (setq-local treesit-font-lock-feature-list regex-ts--feature-list)
+    (setq-local treesit-font-lock-settings (regex-ts-font-lock-rules))
+    (setq-local treesit-font-lock-feature-list regex-ts-font-lock-feature-list)
     (treesit-major-mode-setup)))
 
 (when (treesit-ready-p 'regex)
