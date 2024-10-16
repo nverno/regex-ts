@@ -38,27 +38,33 @@
 
 (defface regex-ts-operator-face
   '((t (:inherit font-lock-operator-face)))
-  "Face to highlight regex operators.")
+  "Face to highlight regex operators."
+  :group 'font-lock-highlighting-faces)
 
 (defface regex-ts-bracket-face
   '((t (:inherit font-lock-regexp-face)))
-  "Face to highlight regex brackets around character classes/ranges.")
+  "Face to highlight regex brackets around character classes/ranges."
+  :group 'font-lock-highlighting-faces)
 
 (defface regex-ts-range-face
   '((t (:inherit font-lock-type-face :slant italic)))
-  "Face to hightlight regex character ranges.")
+  "Face to hightlight regex character ranges."
+  :group 'font-lock-highlighting-faces)
 
 (defface regex-ts-character-class-face
   '((t (:inherit font-lock-type-face)))
-  "Face to highlight characters in regex character classes.")
+  "Face to highlight characters in regex character classes."
+  :group 'font-lock-highlighting-faces)
 
 (defface regex-ts-escape-face
   '((t (:inherit font-lock-escape-face)))
-  "Face to highlight regex escape sequences.")
+  "Face to highlight regex escape sequences."
+  :group 'font-lock-highlighting-faces)
 
 (defface regex-ts-count-face
   '((t (:inherit font-lock-regexp-face :slant italic)))
-  "Face to highlight regex count groups.")
+  "Face to highlight regex count groups."
+  :group 'font-lock-highlighting-faces)
 
 (defvar regex-ts-font-lock-feature-list
   '(( pattern)
@@ -89,7 +95,7 @@
      (class_character) @regex-ts-character-class-face
      (class_range) @regex-ts-range-face
      (count_quantifier) @regex-ts-count-face)
-   
+
    :language 'regex
    :feature 'operator
    :override override
